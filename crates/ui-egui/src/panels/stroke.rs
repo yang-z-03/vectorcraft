@@ -350,7 +350,7 @@ fn arrow_dropdown(ui: &mut Ui, id: &str, cur: Option<Arrowhead>, start: bool) ->
     icons::paint(ui, "chevron-down", Rect::from_center_size(pos2(r.right() - 8.0, r.center().y), vec2(10.0, 10.0)), t.icon);
     let resp = resp.on_hover_text(if start { tl!("Start arrowhead") } else { tl!("End arrowhead") });
     let mut out = None;
-    egui::Popup::menu(&resp).id(egui::Id::new(("arrow-pop", id))).show(|ui| {
+    egui::Popup::menu(&resp).style(crate::theme::menu_popup_style()).id(egui::Id::new(("arrow-pop", id))).show(|ui| {
         ui.set_min_width(170.0);
         egui::ScrollArea::vertical().max_height(360.0).show(ui, |ui| {
             for a in std::iter::once(None).chain(Arrowhead::ALL.map(Some)) {
@@ -420,7 +420,7 @@ pub(crate) fn profile_dropdown(app: &VectorcraftApp, ui: &mut Ui, cur: Option<&W
     icons::paint(ui, "chevron-down", Rect::from_center_size(pos2(r.right() - 9.0, r.center().y), vec2(10.0, 10.0)), t.icon);
     let resp = resp.on_hover_text(tl!("Variable Width Profile"));
     let mut out = None;
-    egui::Popup::menu(&resp).show(|ui| {
+    egui::Popup::menu(&resp).style(crate::theme::menu_popup_style()).show(|ui| {
         egui::ScrollArea::vertical().max_height(360.0).show(ui, |ui| {
             // A divider between the built-in profiles and the saved ones.
             let mut divide = true;

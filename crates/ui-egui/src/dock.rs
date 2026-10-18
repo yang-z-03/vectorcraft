@@ -285,7 +285,7 @@ pub(crate) fn panel_tabs(
         icons::paint(ui, "chevrons-right", Rect::from_center_size(rect.center(), vec2(12.0, 12.0)).intersect(rect), t.text);
         resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), tl!("Panels")));
         let resp = resp.on_hover_text(tl!("Panels"));
-        egui::Popup::menu(&resp).show(|ui| {
+        egui::Popup::menu(&resp).style(crate::theme::menu_popup_style()).show(|ui| {
             widgets::menu_scroll(ui, |ui| {
                 for i in fit.overflow {
                     if let Some(label) = labels.get(i)

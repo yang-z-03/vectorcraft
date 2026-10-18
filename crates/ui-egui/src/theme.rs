@@ -535,12 +535,29 @@ pub(crate) fn craft_font_name(f: &vectorcraft_text::CraftFont) -> String {
 /// every family, after the app's own fonts and before the installed fonts `ui_fonts` adds: BIZ
 /// UDPGothic first (bold first in the semibold family), then the Mincho faces.
 fn add_craft_fonts(fonts: &mut FontDefinitions) {
-    for f in vectorcraft_text::CRAFT_FONTS.iter().filter(|f| f.is_japanese()) {
+    for f in vectorcraft_text::CRAFT_FONTS.iter().filter(|f| f.is_japanese() || f.family == "Roboto") {
         fonts.font_data.insert(craft_font_name(f), Arc::new(FontData::from_static(f.bytes)));
     }
     for (family, stack) in fonts.families.iter_mut() {
         let bold = *family == FontFamily::Name(FONT_UI_SEMIBOLD.into());
-        stack.extend(vectorcraft_text::craft_fonts::japanese_ui_fonts(bold).into_iter().map(craft_font_name));
+        let roboto_style = if bold { "Bold" } else { "Regular" };
+        let ui_family = *family == FontFamily::Proportional
+            || *family == FontFamily::Name(FONT_UI.into())
+            || *family == FontFamily::Name(FONT_UI_SEMIBOLD.into());
+        if ui_family
+            && let Some(name) = vectorcraft_text::CRAFT_FONTS
+                .iter()
+                .find(|f| f.family == "Roboto" && f.style == roboto_style)
+                .map(craft_font_name)
+        {
+            stack.retain(|font| font != &name);
+            stack.insert(0, name);
+        }
+        for font in vectorcraft_text::craft_fonts::japanese_ui_fonts(bold).into_iter().map(craft_font_name) {
+            if !stack.contains(&font) {
+                stack.push(font);
+            }
+        }
     }
 }
 
@@ -594,6 +611,20 @@ pub fn apply_with(ctx: &egui::Context, b: Brightness, accent: Accent, scheme: Sc
         .into();
         s.animation_time = 0.08;
     });
+}
+
+/// Compact, theme-aware style shared by application menus, combo-box lists, and panel menus.
+pub fn menu_popup_style() -> egui::style::StyleModifier {
+    egui::style::StyleModifier::new(apply_menu_popup_style)
+}
+
+/// Apply the compact popup geometry when egui exposes a popup content UI instead of a builder.
+pub fn apply_menu_popup_style(style: &mut egui::Style) {
+    egui::containers::menu::menu_style(style);
+    style.spacing.button_padding = egui::vec2(8.0, 1.0);
+    style.spacing.item_spacing.y = 2.0;
+    style.spacing.interact_size.y = 20.0;
+    style.spacing.menu_margin = egui::Margin::same(6);
 }
 
 #[cfg(test)]

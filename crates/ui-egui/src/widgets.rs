@@ -911,6 +911,7 @@ pub(crate) fn combo<R>(
                 .selected_text(egui::RichText::new(current).size(12.0))
                 .width(width - 4.0)
                 .height(ui.spacing().combo_height)
+                .popup_style(crate::theme::menu_popup_style())
                 .show_ui(ui, list);
             // The button or open list handles Enter before the modal can accept it.
             if enter_for_combo {
@@ -965,6 +966,7 @@ fn searchable_combo<R>(ui: &mut Ui, id: egui::Id, current: &str, width: f32, lis
     let (below, above) = (screen.bottom() - rect.bottom() - frame, rect.top() - screen.top() - frame);
     let (align, room) = if below >= above { (egui::RectAlign::BOTTOM_START, below) } else { (egui::RectAlign::TOP_START, above) };
     egui::Popup::menu(&resp)
+        .style(crate::theme::menu_popup_style())
         .id(popup)
         .width(rect.width())
         .align(align)
@@ -1000,8 +1002,13 @@ pub fn popover<R>(resp: &Response, toggle: bool, content: impl FnOnce(&mut Ui) -
             .is_some_and(|pos| ctx.layer_id_at(pos).is_none_or(|l| l.order != egui::Order::Foreground));
         was_open && !clicked_elsewhere
     };
-    let inner =
-        egui::Popup::menu(resp).id(id).open_bool(&mut open).close_behavior(egui::PopupCloseBehavior::IgnoreClicks).show(content).map(|r| r.inner);
+    let inner = egui::Popup::menu(resp)
+        .style(crate::theme::menu_popup_style())
+        .id(id)
+        .open_bool(&mut open)
+        .close_behavior(egui::PopupCloseBehavior::IgnoreClicks)
+        .show(content)
+        .map(|r| r.inner);
     ctx.data_mut(|d| {
         if open {
             d.insert_temp(id, frame);
@@ -1137,7 +1144,9 @@ pub fn opacity_blend(
         ui.painter().rect_stroke(r, 2, Stroke::new(1.0, t.input_border), StrokeKind::Inside);
         icons::paint(ui, "chevron-right", r.shrink2(vec2(3.0, 7.0)), if enabled { t.icon } else { t.text_disabled });
         resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, enabled && ui.is_enabled(), tl!("Opacity")));
-        egui::Popup::menu(&resp).close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
+        egui::Popup::menu(&resp)
+            .style(crate::theme::menu_popup_style())
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
             let mut o = opacity.unwrap_or(1.0) * 100.0;
             let r = slider(ui, egui::Slider::new(&mut o, 0.0..=100.0).show_value(false));
             let phase = if r.drag_stopped() || (r.changed() && !r.dragged()) {
@@ -1523,7 +1532,7 @@ fn spin_generic(
         }
         if !presets.is_empty() {
             let dresp = chevron_cell(ui, h);
-            egui::Popup::menu(&dresp).show(|ui| {
+            egui::Popup::menu(&dresp).style(crate::theme::menu_popup_style()).show(|ui| {
                 ui.set_min_width(width - 10.0);
                 if let Some(on) = auto
                     && ui.selectable_label(on, tl!("Auto")).clicked()
@@ -2239,7 +2248,7 @@ pub fn text_presets(ui: &mut Ui, id: impl std::hash::Hash + std::fmt::Debug, val
         ui.spacing_mut().item_spacing.x = -1.0;
         out = text_field(ui, &id, Some(value), width - 19.0, 1);
         let resp = chevron_cell(ui, 26.0);
-        egui::Popup::menu(&resp).show(|ui| {
+        egui::Popup::menu(&resp).style(crate::theme::menu_popup_style()).show(|ui| {
             ui.set_min_width(width - 10.0);
             for p in presets {
                 if ui.selectable_label(*p == value, *p).clicked() {

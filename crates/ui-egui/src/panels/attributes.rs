@@ -137,7 +137,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
 fn recent_urls(app: &mut VectorcraftApp, ui: &mut Ui) {
     let resp = widgets::icon_button_enabled(ui, "chevron-down", tl!("Recent URLs"), false, !app.session.recent_urls.is_empty(), 20.0);
     let mut chosen = None;
-    egui::Popup::menu(&resp).show(|ui| {
+    egui::Popup::menu(&resp).style(crate::theme::menu_popup_style()).show(|ui| {
         ui.set_min_width(220.0);
         for u in &app.session.recent_urls {
             if widgets::menu_item_name(ui, u, true, false) {

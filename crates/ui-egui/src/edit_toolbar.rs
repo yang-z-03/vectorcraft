@@ -437,7 +437,7 @@ pub(crate) fn drawer(app: &mut VectorcraftApp, ctx: &egui::Context) {
                     icons::paint(ui, "menu", r.shrink(1.0), if menu.hovered() { t.text_strong } else { t.text_dim });
                     menu.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tl!("Drawer menu")));
                     let menu = menu.on_hover_text(tl!("Drawer menu"));
-                    egui::Popup::menu(&menu).id(menu_id()).show(|ui| {
+                    egui::Popup::menu(&menu).style(crate::theme::menu_popup_style()).id(menu_id()).show(|ui| {
                         ui.set_min_width(160.0);
                         if widgets::menu_item(ui, "Reset", true, false) {
                             reset = true;

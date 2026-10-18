@@ -5,6 +5,20 @@ use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 
+const DOCK_MIN_PANEL_WIDTH: f32 = 220.0;
+const DOCK_MAX_WIDTH: f32 = 720.0;
+const DOCK_SPLIT_GAP: f32 = 4.0;
+
+fn minimum_width(node: &Node<String>) -> f32 {
+    match node {
+        Node::Split { axis: craft_ui::layout::SplitAxis::Horizontal, first, second, .. } => {
+            minimum_width(first) + DOCK_SPLIT_GAP + minimum_width(second)
+        }
+        Node::Split { first, second, .. } => minimum_width(first).max(minimum_width(second)),
+        Node::Tabs { .. } | Node::Stack { .. } => DOCK_MIN_PANEL_WIDTH,
+    }
+}
+
 #[derive(Clone, Default)]
 struct LegacyDrag {
     layout: Option<Layout<String>>,
@@ -643,6 +657,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut egui::Ui) -> bool {
             (layer, ui.ctx().layer_painter(layer).add(egui::Shape::Noop))
         })
         .collect();
+    let preferred_width = app.ui.docking_width;
     let mut draw = |ui: &mut egui::Ui| {
         if layout.root.is_some() && crate::dock::collapse_header(ui, collapsed) {
             let _ = app.run("window.collapseDock", json!({"collapsed":!collapsed}));
@@ -698,7 +713,7 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut egui::Ui) -> bool {
                     .unwrap_or_else(|| id.clone())
             },
             |_| craft_ui::docking::Permissions::default(),
-            |_| craft_ui::docking::PanelLimits { min: egui::vec2(220.0, 80.0), ..Default::default() },
+            |_| craft_ui::docking::PanelLimits { min: egui::vec2(DOCK_MIN_PANEL_WIDTH, 80.0), ..Default::default() },
             &mut content,
         );
         for (id, params) in content.commands {
@@ -709,9 +724,17 @@ pub(crate) fn show(app: &mut VectorcraftApp, ui: &mut egui::Ui) -> bool {
         output
     };
     let output = if layout.root.is_some() {
-        let panel = egui::Panel::right("shared-panel-dock").default_size(310.0).size_range(220.0..=720.0).resizable(true).frame(egui::Frame::NONE);
+        let minimum = layout.root.as_ref().map_or(DOCK_MIN_PANEL_WIDTH, minimum_width).min(DOCK_MAX_WIDTH);
+        let panel = egui::Panel::right("shared-panel-dock")
+            .default_size(preferred_width.max(minimum))
+            .size_range(minimum..=DOCK_MAX_WIDTH)
+            .resizable(true)
+            .frame(egui::Frame::NONE);
         let panel = if collapsed { panel.exact_size(38.0).resizable(false) } else { panel };
         let shown = panel.show(ui, |ui| crate::theme::card(ui, &t, egui::Margin { left: 0, right: 6, top: 6, bottom: 6 }, &mut draw));
+        if !collapsed {
+            app.ui.docking_width = shown.response.rect.width().clamp(220.0, DOCK_MAX_WIDTH);
+        }
         ui.ctx().data_mut(|data| data.insert_temp(crate::floating::dock_rect_id(), shown.response.rect));
         shown.inner
     } else {
@@ -843,6 +866,7 @@ fn icon_rail(app: &mut VectorcraftApp, ui: &mut egui::Ui) {
 pub(crate) fn legacy_tab(app: &mut VectorcraftApp, ui: &mut egui::Ui, panel: &str, response: &egui::Response) {
     let Some(panel) = normalize(panel) else { return };
     response.context_menu(|ui| {
+        crate::theme::apply_menu_popup_style(ui.style_mut());
         if ui.button(tl!("Float Panel")).clicked() {
             if let Err(error) = app.run("window.panel.float", json!({"panel": panel})) {
                 app.ui.status = error;

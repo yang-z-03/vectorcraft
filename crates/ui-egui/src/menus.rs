@@ -3155,6 +3155,19 @@ pub fn menu_bar(app: &mut VectorcraftApp, ui: &mut egui::Ui) -> f32 {
     // platform. The VectorCraft menu stays in the tree: the native Mac bar takes it from there.
     let tree: Vec<(&str, Vec<Item>)> = tree.into_iter().filter(|(title, _)| *title != "VectorCraft").collect();
     let (end, open) = egui::MenuBar::new()
+        .style(move |style: &mut egui::Style| {
+            style.spacing.button_padding = egui::vec2(8.0, 2.0);
+            style.spacing.item_spacing.x = 2.0;
+            style.spacing.interact_size.y = 24.0;
+            style.visuals.widgets.inactive.bg_fill = t.app_bar;
+            style.visuals.widgets.inactive.bg_stroke = egui::Stroke::NONE;
+            style.visuals.widgets.hovered.bg_fill = t.panel_darker;
+            style.visuals.widgets.hovered.bg_stroke = egui::Stroke::NONE;
+            style.visuals.widgets.active.bg_fill = t.tool_active;
+            style.visuals.widgets.active.bg_stroke = egui::Stroke::NONE;
+            style.visuals.widgets.open.bg_fill = t.panel_darker;
+            style.visuals.widgets.open.bg_stroke = egui::Stroke::NONE;
+        })
         .ui(ui, |ui| {
             let mut titles = Vec::with_capacity(tree.len());
             for (title, items) in tree.iter() {
@@ -3221,6 +3234,7 @@ fn menu_body(app: &VectorcraftApp, ui: &mut egui::Ui, items: &[Item], clicked: &
 /// `items` as menu buttons; with `checks`, items that can be on or off show a check mark (or the
 /// room for one).
 fn render_items(app: &VectorcraftApp, ui: &mut egui::Ui, items: &[Item], checks: bool, clicked: &mut Option<(String, Value)>) {
+    crate::theme::apply_menu_popup_style(ui.style_mut());
     let t = Tokens::get(ui.ctx());
     for e in items.iter().filter_map(|it| entry(app, it)) {
         match e {
@@ -3228,10 +3242,17 @@ fn render_items(app: &VectorcraftApp, ui: &mut egui::Ui, items: &[Item], checks:
                 ui.separator();
             }
             Entry::Header(h) => {
-                ui.label(egui::RichText::new(h).size(11.0).color(t.text_dim));
+                let gutter = ui.spacing().button_padding.x + 14.0 + ui.spacing().item_spacing.x;
+                ui.horizontal(|ui| {
+                    ui.add_space(gutter);
+                    ui.label(egui::RichText::new(h).text_style(egui::TextStyle::Button).color(t.text_dim));
+                });
             }
             Entry::Sub(label, children) => {
-                ui.menu_button(label, |ui| {
+                let slot = ui.next_auto_id().with("menu-check-gutter");
+                let button = egui::Button::new((egui::Atom::custom(slot, egui::vec2(14.0, 14.0)), label))
+                    .right_text(egui::containers::menu::SubMenuButton::RIGHT_ARROW);
+                egui::containers::menu::SubMenuButton::from_button(button).ui(ui, |ui| {
                     widgets::menu_scroll(ui, |ui| {
                         ui.set_min_width(200.0);
                         render_items(app, ui, children, checks, clicked);
@@ -3247,38 +3268,55 @@ fn render_items(app: &VectorcraftApp, ui: &mut egui::Ui, items: &[Item], checks:
 /// and Type › Font's samples.
 fn render_row(app: &VectorcraftApp, ui: &mut egui::Ui, row: &Row, checks: bool, clicked: &mut Option<(String, Value)>) {
     let sc = row.shortcut.map(pretty_shortcut).unwrap_or_default();
+    let check_slot = ui.next_auto_id().with("menu-check-gutter");
+    let left = egui::Atom::custom(check_slot, egui::vec2(14.0, 14.0));
     let Some((id, p)) = row.command else {
-        ui.add_enabled_ui(false, |ui| {
-            ui.add(egui::Button::new(row.label.as_ref()).shortcut_text(sc));
-        })
-        .response
-        .on_disabled_hover_text(tl!("Coming soon — tracked in the parity plan"));
+        let output = ui
+            .add_enabled_ui(false, |ui| egui::Button::new((left, row.label.as_ref())).shortcut_text(sc).atom_ui(ui))
+            .inner;
+        paint_menu_check(ui, &output, check_slot, checks && row.checked == Some(true), false);
+        output.response.on_disabled_hover_text(tl!("Coming soon — tracked in the parity plan"));
         return;
-    };
-    let text = match row.checked.filter(|_| checks) {
-        Some(true) => format!("✓  {}", row.label),
-        Some(false) => format!("     {}", row.label),
-        None => row.label.to_string(),
     };
     // Type → Font: each family's sample after its name (Enable in-menu font previews).
     let sampled = p.get("font").and_then(Value::as_str).filter(|_| id == "text.setStyle" && app.session.prefs.font_preview);
     let r = match sampled {
         Some(family) => {
-            let slot = ui.id().with(("font-sample", family));
-            let button = egui::Button::new(text).right_text(egui::Atom::custom(slot, crate::font_menu::MENU_SAMPLE_SIZE));
+            let sample_slot = ui.id().with(("font-sample", family));
+            let button = egui::Button::new((left, row.label.as_ref()))
+                .right_text(egui::Atom::custom(sample_slot, crate::font_menu::MENU_SAMPLE_SIZE));
             let out = ui.add_enabled_ui(row.enabled, |ui| button.atom_ui(ui)).inner;
-            if let Some(rect) = out.rect(slot) {
+            if let Some(rect) = out.rect(sample_slot) {
                 crate::font_menu::menu_item_sample(ui, rect, family);
             }
+            paint_menu_check(ui, &out, check_slot, checks && row.checked == Some(true), row.enabled);
             out.response
         }
-        None => ui.add_enabled(row.enabled, egui::Button::new(text).shortcut_text(sc)),
+        None => {
+            let out = ui.add_enabled_ui(row.enabled, |ui| egui::Button::new((left, row.label.as_ref())).shortcut_text(sc).atom_ui(ui)).inner;
+            paint_menu_check(ui, &out, check_slot, checks && row.checked == Some(true), row.enabled);
+            out.response
+        }
     };
     if r.clicked() {
         *clicked = row.target();
         ui.close();
     }
 }
+
+/// Paint the check glyph in the fixed-width leading atom used by every menu row.
+fn paint_menu_check(ui: &egui::Ui, output: &egui::AtomLayoutResponse, slot: egui::Id, checked: bool, enabled: bool) {
+    if !checked {
+        return;
+    }
+    let Some(rect) = output.rect(slot) else { return };
+    let center = rect.center();
+    let color = if enabled { Tokens::get(ui.ctx()).text } else { Tokens::get(ui.ctx()).text_dim };
+    let stroke = egui::Stroke::new(1.5, color);
+    ui.painter().line_segment([center + egui::vec2(-3.5, 0.0), center + egui::vec2(-1.0, 2.5)], stroke);
+    ui.painter().line_segment([center + egui::vec2(-1.0, 2.5), center + egui::vec2(4.0, -3.0)], stroke);
+}
+
 
 /// What the Home screen remembers when it opens (`app.home`): the active document and the
 /// document count. When either changes, the Home screen gives way to the document.

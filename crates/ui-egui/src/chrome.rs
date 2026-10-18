@@ -19,12 +19,11 @@ const MARK: f32 = 18.0;
 /// Height of the workspace switcher.
 const WIDGET_H: f32 = 22.0;
 
-/// The application bar: brand mark, Home, menus, then Discord, search and the workspace switcher
+/// The application bar: brand mark, menus, search and the workspace switcher
 /// at the right. With [`VectorcraftApp::custom_titlebar`] it is also the window's title bar
 /// ([`titlebar`]): the caption buttons take the right end and the rest of the bar drags the window.
-/// On macOS, under the system's transparent title bar, its empty space drags and zooms the window
-/// too ([`titlebar::drag_area`]). With the system title bar (Windows and Linux, `system_title_bar`) the OS draws its own icon and
-/// title, so the in-app bar shows Home, menus and workspace controls only: no brand mark.
+/// With the system title bar (Windows and Linux, `system_title_bar`) the OS draws its own icon and
+/// title, so the in-app bar shows menus and workspace controls only: no brand mark.
 pub fn app_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     let custom = app.custom_titlebar;
@@ -44,16 +43,10 @@ pub fn app_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                 crate::brand::paint_mark(ui, r);
                 ui.add_space(6.0);
             }
-            let on_home = menus::home_showing(app);
-            if widgets::icon_button(ui, "house", tl!("Home"), on_home, 20.0).clicked() {
-                app.run("app.home", json!({})).ok();
-            }
-            ui.add_space(2.0);
             // With the macOS menu bar the menus are at the top of the screen instead.
             let menus_end = if app.services.native_menu.is_some() { ui.cursor().min.x } else { menus::menu_bar(app, ui) };
             // The right-side group fills the space after the menus from the right; when it runs
-            // short, Discord goes first (it is also under Help), then the search icon (the palette
-            // stays under its shortcut), then the workspace switcher narrows.
+            // short, the search icon drops out before the workspace switcher narrows.
             let full = ui.max_rect();
             let right_edge = if custom { full.right() - titlebar::WIDTH - 10.0 } else { full.right() };
             let right = egui::Rect::from_min_max(egui::pos2(menus_end + 8.0, full.top()), egui::pos2(right_edge, full.bottom()));
@@ -68,7 +61,6 @@ pub fn app_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
             let icon = 28.0;
             let search = room >= 64.0 + 8.0 + gap + icon;
             let ws_w = ws_w.min(room - 8.0 - gap - if search { icon } else { 0.0 }).max(64.0);
-            let discord = search && room >= ws_w + 8.0 + gap + icon + 10.0 + gap + crate::community::discord_width(ui, false);
             let mut rui = ui.new_child(egui::UiBuilder::new().max_rect(right).layout(egui::Layout::right_to_left(egui::Align::Center)));
             let ui = &mut rui;
             // Workspace switcher: shows the current workspace, opens Window → Workspace.
@@ -77,7 +69,7 @@ pub fn app_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
             ui.painter().with_clip_rect(wr.shrink2(vec2(4.0, 0.0))).galley(wr.left_center() + vec2(10.0, -ws.size().y / 2.0), ws, t.text);
             icons::paint(ui, "chevron-down", egui::Rect::from_center_size(wr.right_center() - vec2(12.0, 0.0), vec2(12.0, 12.0)), t.text_dim);
             let wresp = wresp.on_hover_text(tl!("Switch workspace"));
-            egui::Popup::menu(&wresp).show(|ui| crate::workspaces::popup(app, ui));
+            egui::Popup::menu(&wresp).style(crate::theme::menu_popup_style()).show(|ui| crate::workspaces::popup(app, ui));
             ui.add_space(8.0);
             // Search → command palette (its shortcut opens it too).
             if search {
@@ -89,10 +81,6 @@ pub fn app_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     app.ui.palette_open = !app.ui.palette_open;
                     app.ui.palette_query.clear();
                 }
-            }
-            if discord {
-                ui.add_space(10.0);
-                crate::community::discord_button(app, ui, false);
             }
             if app.services.native_menu.is_some() {
                 let title = ui.painter().layout_no_wrap("VectorCraft".into(), egui::FontId::proportional(13.5), t.text);
@@ -331,7 +319,7 @@ pub fn control_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     let resp = widgets::chip_button_named(ui, 22.0, true, tl!("Graphic Style"), |ui, r| {
                         crate::panels::graphic_styles::paint_linked(app, ui, r)
                     });
-                    egui::Popup::menu(&resp).show(|ui| crate::panels::graphic_styles::picker(app, ui));
+                    egui::Popup::menu(&resp).style(crate::theme::menu_popup_style()).show(|ui| crate::panels::graphic_styles::picker(app, ui));
                     // Recolor Artwork, when the selection has colours to recolour.
                     let colored = app.session.active().is_some_and(|st| crate::canvas::has_colors(&st.doc, &st.selection.objects));
                     if colored && widgets::icon_button(ui, "palette", tl!("Recolor Artwork"), false, 24.0).clicked() {
@@ -481,7 +469,7 @@ pub fn doc_tabs(app: &mut VectorcraftApp, ui: &mut Ui) {
         ui.painter().rect_filled(more, 0.0, if resp.hovered() { t.hover.gamma_multiply(0.4) } else { t.tab_strip });
         icons::paint(ui, "chevrons-right", egui::Rect::from_center_size(more.center(), vec2(14.0, 14.0)), t.text);
         let resp = resp.on_hover_text(tl!("Show all open documents"));
-        egui::Popup::menu(&resp).show(|ui| {
+        egui::Popup::menu(&resp).style(crate::theme::menu_popup_style()).show(|ui| {
             for (i, (title, _)) in tabs.iter().enumerate() {
                 if widgets::menu_item_name(ui, title, true, Some(i) == active) {
                     activate = Some(i);
@@ -653,7 +641,11 @@ pub fn status_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
                 let zoom = app.view().map(|v| v.zoom).unwrap_or(1.0);
-                egui::ComboBox::from_id_salt("zoom-combo").selected_text(egui::RichText::new(zoom_label(zoom)).size(11.5)).width(76.0).show_ui(
+                egui::ComboBox::from_id_salt("zoom-combo")
+                    .selected_text(egui::RichText::new(zoom_label(zoom)).size(11.5))
+                    .width(76.0)
+                    .popup_style(crate::theme::menu_popup_style())
+                    .show_ui(
                     ui,
                     |ui| {
                         for z in ZOOM_STOPS.iter().rev() {
@@ -671,7 +663,11 @@ pub fn status_bar(app: &mut VectorcraftApp, ui: &mut Ui) {
                     },
                 );
                 let rot = app.view().map(|v| v.rotation).unwrap_or(0.0);
-                egui::ComboBox::from_id_salt("rot-combo").selected_text(egui::RichText::new(format!("{rot:.0}°")).size(11.5)).width(52.0).show_ui(
+                egui::ComboBox::from_id_salt("rot-combo")
+                    .selected_text(egui::RichText::new(format!("{rot:.0}°")).size(11.5))
+                    .width(52.0)
+                    .popup_style(crate::theme::menu_popup_style())
+                    .show_ui(
                     ui,
                     |ui| {
                         for (label, a) in ROTATE_VIEW_ANGLES {

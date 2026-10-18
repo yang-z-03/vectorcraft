@@ -170,6 +170,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
                     super::set_pstate(ui.ctx(), &key, !closed);
                 }
                 header.context_menu(|ui| {
+                    crate::theme::apply_menu_popup_style(ui.style_mut());
                     if menu_item(ui, "Rename Group…", true, false) {
                         act = Some(Act::RenameGroup(g.name.clone()));
                         ui.close();
@@ -212,7 +213,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             act = Some(Act::NewGroup(json!([])));
         }
         let add = widgets::icon_button_enabled(ui, "plus", tl!("Add Content"), false, has_doc, 24.0);
-        egui::Popup::menu(&add).show(|ui| {
+        egui::Popup::menu(&add).style(crate::theme::menu_popup_style()).show(|ui| {
             for (label, kind) in [
                 ("Graphic", "graphic"),
                 ("Fill Color", "fillColor"),
@@ -268,7 +269,10 @@ impl Items<'_> {
                         let to = if self.fill_active { "fill" } else { "stroke" };
                         *act = Some(Act::Run("library.use", json!({ "kind": "fillColor", "item": c.name, "to": to })));
                     }
-                    resp.context_menu(|ui| self.item_menu(ui, act, ItemKind::Color, &c.name));
+                    resp.context_menu(|ui| {
+                        crate::theme::apply_menu_popup_style(ui.style_mut());
+                        self.item_menu(ui, act, ItemKind::Color, &c.name);
+                    });
                 }
             });
             ui.add_space(6.0);
@@ -293,7 +297,10 @@ impl Items<'_> {
                 if resp.clicked() {
                     *act = Some(Act::Run("library.use", json!({ "kind": kind_param(kind), "item": st.name })));
                 }
-                resp.context_menu(|ui| self.item_menu(ui, act, kind, &st.name));
+                resp.context_menu(|ui| {
+                    crate::theme::apply_menu_popup_style(ui.style_mut());
+                    self.item_menu(ui, act, kind, &st.name);
+                });
             }
             ui.add_space(6.0);
         }
@@ -314,6 +321,7 @@ impl Items<'_> {
                         *act = Some(place());
                     }
                     resp.context_menu(|ui| {
+                        crate::theme::apply_menu_popup_style(ui.style_mut());
                         if menu_item(ui, "Place", true, false) {
                             *act = Some(place());
                             ui.close();

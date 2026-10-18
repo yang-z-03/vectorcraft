@@ -596,7 +596,7 @@ fn bottom<K: LibraryKind>(app: &mut VectorcraftApp, ui: &mut Ui, id: &str) {
     let selected = selection(ui.ctx(), &panel_id(K::KIND, id));
     widgets::bottom_bar(ui, |ui| {
         let r = widgets::icon_button(ui, "library", K::MENU, false, 24.0);
-        egui::Popup::menu(&r).show(|ui| {
+        egui::Popup::menu(&r).style(crate::theme::menu_popup_style()).show(|ui| {
             ui.set_min_width(200.0);
             library_menu::<K>(app, ui);
         });

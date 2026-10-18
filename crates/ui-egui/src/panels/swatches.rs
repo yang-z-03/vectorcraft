@@ -930,12 +930,12 @@ fn bottom(app: &mut VectorcraftApp, ui: &mut Ui, sel: &[String]) {
     widgets::bottom_bar(ui, |ui| {
         let open = library_panel::any_open::<SwatchLibraries>(&app.ui);
         let lr = widgets::icon_button(ui, "library", SwatchLibraries::MENU, open, 24.0);
-        egui::Popup::menu(&lr).show(|ui| {
+        egui::Popup::menu(&lr).style(crate::theme::menu_popup_style()).show(|ui| {
             ui.set_min_width(200.0);
             library_panel::library_menu::<SwatchLibraries>(app, ui);
         });
         let kr = widgets::icon_button(ui, "dc-swatch-kinds", tl!("Show Swatch Kinds"), kind != Kind::All, 24.0);
-        egui::Popup::menu(&kr).show(|ui| {
+        egui::Popup::menu(&kr).style(crate::theme::menu_popup_style()).show(|ui| {
             for (k, label) in Kind::ALL {
                 if menu_item(ui, label, true, k == kind) {
                     set_pstate(ui.ctx(), "swatch-kind", k);

@@ -2750,10 +2750,6 @@ fn home(app: &mut VectorcraftApp, ui: &mut Ui, rect: egui::Rect) {
             }
         }
     });
-    ui.add_space(28.0);
-    ui.label(egui::RichText::new(tl!("Community")).font(theme::semibold(14.0)).color(t.text));
-    ui.add_space(10.0);
-    crate::community::links(app, ui);
 }
 
 /// The Home screen's Recent Files (#663): the first of File › Open Recent Files, each its name and
@@ -3041,7 +3037,7 @@ fn task_bar(app: &mut VectorcraftApp, ui: &mut Ui, xf: &Xf) {
                         }
                     }
                     let more = widgets::icon_button(ui, "ellipsis", tl!("More Options"), false, 30.0);
-                    egui::Popup::menu(&more).show(|ui| {
+                    egui::Popup::menu(&more).style(crate::theme::menu_popup_style()).show(|ui| {
                         ui.set_min_width(170.0);
                         let bar = [
                             (tl!("Hide Bar"), "window.taskBar", false),

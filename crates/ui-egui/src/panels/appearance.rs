@@ -448,7 +448,9 @@ fn stack(app: &mut VectorcraftApp, ui: &mut Ui, n: &Node, sel: Sel, object_row: 
             select_row(app, ui.ctx(), Sel::Item(i));
             app.ui.open_panel = Some("color".into());
         }
-        egui::Popup::menu(&cresp).open_memory((cresp.clicked() && !mixer).then_some(egui::SetOpenCommand::Toggle)).show(|ui| {
+        egui::Popup::menu(&cresp)
+            .style(crate::theme::menu_popup_style())
+            .open_memory((cresp.clicked() && !mixer).then_some(egui::SetOpenCommand::Toggle)).show(|ui| {
             swatch_picker(app, ui, i);
         });
         if let AppearanceItem::Stroke(st) = it {
@@ -872,7 +874,7 @@ fn bottom(app: &mut VectorcraftApp, ui: &mut Ui, node: Option<&Node>, sel: Sel) 
             app.run("appearance.addFill", json!({})).ok();
         }
         let fx = widgets::icon_button_enabled(ui, "dc-fx", tl!("Add New Effect"), false, has, 24.0);
-        egui::Popup::menu(&fx).show(|ui| {
+        egui::Popup::menu(&fx).style(crate::theme::menu_popup_style()).show(|ui| {
             fx_menu(app, ui);
         });
         ui.add_space((ui.available_width() - 3.0 * 28.0).max(0.0));

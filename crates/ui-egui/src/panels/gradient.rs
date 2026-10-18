@@ -400,7 +400,7 @@ fn thumbnail(app: &mut VectorcraftApp, ui: &mut Ui, g: &GradientPaint, is_grad: 
     let dresp = ui.interact(dr, ui.id().with("grad-swatches"), Sense::click());
     icons::paint(ui, "chevron-down", Rect::from_center_size(dr.center(), vec2(12.0, 12.0)), if dresp.hovered() { t.text_strong } else { t.icon });
     let dresp = dresp.on_hover_text(tl!("Gradient swatches"));
-    egui::Popup::menu(&dresp).show(|ui| {
+    egui::Popup::menu(&dresp).style(crate::theme::menu_popup_style()).show(|ui| {
         ui.set_min_width(200.0);
         let mut chosen = None;
         let swatches = gradient_swatches(app);

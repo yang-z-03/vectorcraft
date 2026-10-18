@@ -39,6 +39,8 @@ pub struct Workspace {
     /// Panels whose saved return destination is the iconic rail.
     #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
     pub docking_icons: std::collections::BTreeSet<String>,
+    /// Preferred width of the shared right dock, including side-by-side columns.
+    pub docking_width: f32,
     /// Where the Tools panel floats (built-in workspaces: docked).
     pub toolbar_pos: Option<[f32; 2]>,
 }
@@ -139,6 +141,7 @@ pub fn capture(ui: &UiState, name: &str) -> Workspace {
         docking: ui.docking.clone(),
         docking_hidden: ui.docking_hidden.clone(),
         docking_icons: ui.docking_icons.clone(),
+        docking_width: ui.docking_width,
         toolbar_pos: ui.toolbar_pos,
     }
 }
@@ -164,6 +167,7 @@ pub fn apply(ui: &mut UiState, w: &Workspace) {
     ui.docking_hidden = w.docking_hidden.clone();
     ui.docking_icons =
         w.docking_icons.iter().filter(|id| crate::state::ICON_PANELS.iter().any(|entry| entry.0 == id.as_str())).take(64).cloned().collect();
+    ui.docking_width = if w.docking_width.is_finite() { w.docking_width.clamp(220.0, 720.0) } else { 310.0 };
     ui.toolbar_pos = w.toolbar_pos;
     FloatingPanels::sanitize(&mut ui.floating_panels, &mut ui.toolbar_pos);
     ui.flyout = None;

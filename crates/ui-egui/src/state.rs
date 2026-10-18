@@ -323,6 +323,9 @@ pub struct UiState {
     /// Panels whose saved return destination is the iconic rail.
     #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
     pub docking_icons: std::collections::BTreeSet<String>,
+    /// Preferred width of the shared right dock, including any side-by-side panel columns.
+    #[serde(default = "default_docking_width")]
+    pub docking_width: f32,
     /// Invalidates in-flight gestures when a workspace is replaced.
     #[serde(skip)]
     pub docking_generation: u64,
@@ -711,6 +714,7 @@ impl UiState {
         FloatingPanels::sanitize(&mut self.floating_panels, &mut self.toolbar_pos);
         crate::edit_toolbar::sanitize(&mut self.toolbar_edits);
         self.docking = self.docking.filter(crate::panel_docking::valid);
+        self.docking_width = if self.docking_width.is_finite() { self.docking_width.clamp(220.0, 720.0) } else { default_docking_width() };
         self.docking_icons.retain(|id| ICON_PANELS.iter().any(|entry| entry.0 == id));
         // Overrides that can't fire (modifier-only chords recorded by older versions, #487) give
         // the default back.
@@ -743,6 +747,7 @@ impl Default for UiState {
             docking: None,
             docking_hidden: Default::default(),
             docking_icons: Default::default(),
+            docking_width: default_docking_width(),
             docking_generation: 0,
             toolbar_pos: None,
             status_bar: true,
@@ -805,6 +810,10 @@ fn yes() -> bool {
 
 fn is_zero_u8(v: &u8) -> bool {
     *v == 0
+}
+
+fn default_docking_width() -> f32 {
+    310.0
 }
 
 fn default_shortcut_set() -> String {

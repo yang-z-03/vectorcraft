@@ -1,4 +1,4 @@
-//! Community and project links: the Discord button (header, About, Home) and the link list.
+//! Community and project links: the Discord button in About / Home and the link list.
 //! Icons are Lucide's (ISC); Discord's own logo is a trademark, so the button uses a chat icon
 //! on Discord's colour with the word "Discord".
 

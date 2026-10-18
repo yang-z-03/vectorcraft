@@ -480,7 +480,9 @@ pub fn transform_section(app: &mut VectorcraftApp, ui: &mut Ui) {
         // More Options: the Transform panel's Scale Corners and Scale Strokes & Effects, open
         // while they are toggled.
         let more = widgets::icon_button(ui, "ellipsis", tl!("More Options"), false, 24.0);
-        egui::Popup::menu(&more).close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
+        egui::Popup::menu(&more)
+            .style(crate::theme::menu_popup_style())
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
             let (sc, ss) = (app.session.prefs.scale_corners, app.session.prefs.scale_strokes);
             if widgets::check(ui, tl!("Scale Corners"), sc, true) {
                 super::transform::set_pref(app, "scaleCorners", !sc);
@@ -521,7 +523,7 @@ fn appearance_section(app: &mut VectorcraftApp, ui: &mut Ui) {
     ui.horizontal(|ui| {
         // The fx button opens the effect menu, as the Appearance panel's does.
         let r = widgets::flat_button(ui, "fx", 34.0).on_hover_text(tl!("Add New Effect"));
-        egui::Popup::menu(&r).show(|ui| super::appearance::fx_menu(app, ui));
+        egui::Popup::menu(&r).style(crate::theme::menu_popup_style()).show(|ui| super::appearance::fx_menu(app, ui));
         if widgets::icon_button(ui, "ellipsis", tl!("Appearance panel"), false, 22.0).clicked() {
             app.ui.open_panel = Some("appearance".into());
         }

@@ -481,7 +481,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     widgets::bottom_bar(ui, |ui| {
         let open = library_panel::any_open::<GraphicStyleLibraries>(&app.ui);
         let lr = widgets::icon_button(ui, "library", GraphicStyleLibraries::MENU, open, 24.0);
-        egui::Popup::menu(&lr).show(|ui| {
+        egui::Popup::menu(&lr).style(crate::theme::menu_popup_style()).show(|ui| {
             ui.set_min_width(200.0);
             library_panel::library_menu::<GraphicStyleLibraries>(app, ui);
         });
